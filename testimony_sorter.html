@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testimony Sorter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #1c1812;
+    --surface: #231f18;
+    --surface2: #2a2520;
+    --border: #3a3428;
+    --text: #e8e2d4;
+    --text-dim: #7a6e5a;
+    --text-mid: #b0a890;
+    --accent: #c8a040;
+    --accent-dim: #2a1e00;
+    --red: #b84020;
+    --green: #208050;
+    --blue: #204880;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Jost', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header h1 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.8rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  header p {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    max-width: 600px;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-bar-container {
+    padding: 12px 40px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .progress-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+
+  .progress-text {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    min-width: 80px;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .app-body {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    min-height: calc(100vh - 120px);
+  }
+
+  /* ── TESTIMONY AREA ── */
+  .testimony-area {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 480px;
+    border-right: 1px solid var(--border);
+  }
+
+  .testimony-number {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .testimony-text {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.35rem;
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--text);
+    margin-bottom: 32px;
+    max-width: 600px;
+  }
+
+  .testimony-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-btn.primary {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .nav-btn.primary:hover { background: var(--accent); color: var(--bg); }
+
+  /* ── ANSWERED INDICATOR ── */
+  .answered-badge {
+    font-size: 0.68rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-left: auto;
+    display: none;
+  }
+  .answered-badge.show { display: block; }
+
+  /* ── RESPONSE PANEL ── */
+  .response-panel {
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    max-height: calc(100vh - 120px);
+  }
+
+  .panel-heading {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── QUESTION BLOCK ── */
+  .question-block { }
+
+  .q-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .q-text {
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    margin-bottom: 8px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .q-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    padding: 10px 12px;
+    resize: none;
+    min-height: 60px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .q-input:focus { border-color: var(--accent); }
+  .q-input::placeholder { color: var(--text-dim); font-style: italic; }
+
+  /* ── CONFIDENCE ── */
+  .confidence-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .conf-btn {
+    flex: 1;
+    padding: 6px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Jost', sans-serif;
+  }
+
+  .conf-btn:hover { color: var(--text); border-color: var(--text-dim); }
+  .conf-btn.selected { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  /* ── REVEAL ── */
+  .reveal-block {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 16px 18px;
+    animation: slideIn 0.3s ease;
+  }
+  .reveal-block.show { display: block; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal-source {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .reveal-date {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .reveal-context {
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .reveal-question {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.55;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  /* ── SUMMARY ── */
+  .summary-view {
+    display: none;
+    padding: 40px;
+  }
+  .summary-view.show { display: block; }
+
+  .summary-header {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-style: italic;
+    font-weight: 300;
+    margin-bottom: 8px;
+  }
+
+  .summary-intro {
+    font-size: 0.84rem;
+    color: var(--text-mid);
+    margin-bottom: 32px;
+    line-height: 1.6;
+    max-width: 560px;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+  }
+
+  .summary-card-quote {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--text-mid);
+    margin-bottom: 10px;
+    line-height: 1.55;
+  }
+
+  .summary-card-source {
+    font-size: 0.72rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+
+  .summary-answers {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .summary-answers strong {
+    color: var(--text-mid);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .closing-questions {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    max-width: 600px;
+  }
+
+  .closing-questions h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 1rem;
+    font-style: italic;
+    margin-bottom: 14px;
+    color: var(--accent);
+  }
+
+  .closing-q {
+    font-size: 0.84rem;
+    color: var(--text-mid);
+    line-height: 1.65;
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  .dot-nav {
+    display: flex;
+    gap: 6px;
+    padding: 0 40px;
+    margin-top: -8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .dot.current { background: var(--accent); }
+  .dot.answered { background: var(--text-dim); }
+
+  @media (max-width: 768px) {
+    .app-body { grid-template-columns: 1fr; }
+    .testimony-area { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Testimony Sorter</h1>
+  <p>For each passage: who is speaking? what do they want? what do they believe is true about the world?<br>Answer before you know who wrote it.</p>
+</header>
+
+<div class="progress-bar-container">
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <div class="progress-text" id="progressText">0 of 14</div>
+</div>
+
+<div class="dot-nav" id="dotNav"></div>
+
+<div class="app-body" id="appBody">
+  <div class="testimony-area" id="testimonyArea"></div>
+  <div class="response-panel" id="responsePanel"></div>
+</div>
+
+<div class="summary-view" id="summaryView"></div>
+
+<script>
+const TESTIMONIES = [
+  {
+    id: 1,
+    text: "It is the innocence which constitutes the crime.",
+    source: "James Baldwin",
+    date: "The Fire Next Time, 1963",
+    context: "Baldwin writing to his nephew about white Americans' refusal to know what has been done in their name.",
+    followUp: "Did you assume this was written by someone inside or outside the tradition being critiqued? Why?"
+  },
+  {
+    id: 2,
+    text: "Colonizers wanted the land. Everything else — whether it is legal or policy or economic or social, whether it was the Indian Act or residential schools or gender violence — was part of the machinery that was designed to create a perfect crime: a crime where the victims are unable to see or name the crime as a crime.",
+    source: "Leanne Betasamosake Simpson",
+    date: "As We Have Always Done, 2017",
+    context: "Simpson is Michi Saagiig Nishnaabeg, writing about settler colonialism from inside a land-use mapping project with Elders.",
+    followUp: "What did you assume about the writer's relationship to the events described? Was your assumption correct?"
+  },
+  {
+    id: 3,
+    text: "We knew the story of the international rules-based order was partially false. That the strongest would exempt themselves when convenient. So we placed the sign in the window. We participated in the rituals.",
+    source: "Mark Carney, Prime Minister of Canada",
+    date: "World Economic Forum, Davos, January 2026",
+    context: "Carney is a former central banker and economist, speaking to the global financial elite about the collapse of the American-led international order.",
+    followUp: "Did you expect this to come from a head of government? What does that tell you about who gets to name things?"
+  },
+  {
+    id: 4,
+    text: "The master's tools will never dismantle the master's house. They may allow us temporarily to beat him at his own game, but they will never enable us to bring about genuine change.",
+    source: "Audre Lorde",
+    date: "Sister Outsider, 1984",
+    context: "Lorde delivered this as a comment at an academic conference on feminist theory, criticising the conference's near-total exclusion of Black women and lesbians.",
+    followUp: "Did you assume this was written by an academic theorist, an activist, or both? Does the distinction matter?"
+  },
+  {
+    id: 5,
+    text: "There is not a liberal America and a conservative America — there is the United States of America. There is not a Black America and a White America and Latino America and Asian America — there's the United States of America.",
+    source: "Barack Obama",
+    date: "Democratic National Convention keynote, 2004",
+    context: "Obama was a state senator from Illinois, largely unknown nationally. This speech made him a national figure. He was elected President four years later.",
+    followUp: "How did your answer to 'what do they want?' change when you saw who wrote this and what happened next?"
+  },
+  {
+    id: 6,
+    text: "We are the memories we don't remember, which live in us, which we feel, which make us sing and dance and pray the way we do, feelings from memories that flare and bloom unexpectedly in our lives like blood through a blanket from a wound made by a bullet fired by a man shooting us in the back.",
+    source: "Tommy Orange",
+    date: "There There, 2018 — Prologue",
+    context: "Orange is Cheyenne and Arapaho, grew up in Oakland. The novel is set among urban Indigenous people preparing to attend a powwow.",
+    followUp: "What did you imagine about the writer's relationship to the 'we' of this passage? Were you right?"
+  },
+  {
+    id: 7,
+    text: "When you ask for something they have, they never say no. To the contrary, they offer to share with anyone. They are so naive and so free with their possessions that no one who has not witnessed them would believe it.",
+    source: "Christopher Columbus",
+    date: "Letter to the Spanish court, 1493",
+    context: "Columbus is describing the Arawak people of the Bahamas. The letter was written to secure continued royal support for further expeditions.",
+    followUp: "What did you assume about the writer's intentions when reading this passage? Did the reveal change your interpretation?"
+  },
+  {
+    id: 8,
+    text: "One has not only a legal but a moral responsibility to obey just laws. Conversely, one has a moral responsibility to disobey unjust laws. I would agree with St. Augustine that 'an unjust law is no law at all.'",
+    source: "Martin Luther King Jr.",
+    date: "Letter from Birmingham Jail, 1963",
+    context: "King wrote this in the margins of newspapers and on scraps of toilet paper in a Birmingham jail cell, addressed to eight white Alabama clergymen who had called his demonstrations 'unwise and untimely.'",
+    followUp: "Did you assume this was written by someone inside or outside the political tradition being addressed? Does it matter?"
+  },
+  {
+    id: 9,
+    text: "From this standpoint, it doesn't matter who is president or prime minister, because our most important work is internal, and the kinds of transformations we are compelled to make are profoundly systemic.",
+    source: "Leanne Betasamosake Simpson",
+    date: "As We Have Always Done, 2017",
+    context: "Simpson is arguing for Indigenous resurgence as internal nation-building rather than engagement with the colonial state.",
+    followUp: "Did this sound like despair or strategy to you? Did knowing the source change your answer?"
+  },
+  {
+    id: 10,
+    text: "It is time for companies and countries to take their signs down. Stop invoking the 'rules-based international order' as though it still functions as advertised. Call the system what it is.",
+    source: "Mark Carney, Prime Minister of Canada",
+    date: "World Economic Forum, Davos, January 2026",
+    context: "Same speech as passage 3. Carney is using Václav Havel's 'living in truth' argument to argue for middle-power solidarity against great-power coercion.",
+    followUp: "Does knowing this is from the same speech as passage 3 change how you read it? What does the pairing tell you?"
+  },
+  {
+    id: 11,
+    text: "What was once done might also be undone.",
+    source: "Kristin Kobes Du Mez",
+    date: "Jesus and John Wayne, 2020",
+    context: "Du Mez closes her account of fifty years of manufactured evangelical militant masculinity with this sentence — the only note of possibility in the entire book.",
+    followUp: "Did you expect this to come from a historian studying evangelical Christianity? What does that expectation reveal?"
+  },
+  {
+    id: 12,
+    text: "Breakbeats are evidence of how we were once broken, and I want nothing more than to bring about a healing.",
+    source: "Questlove (Ahmir-Khalib Thompson)",
+    date: "Hip-Hop Is History, epilogue — set in 2073",
+    context: "The epilogue is narrated from 2073, fifty years in the future. Questlove is imagining a narrator looking back at the entire history of hip hop.",
+    followUp: "Did you know this was set in the future? Does that change what kind of statement it is — historical, political, spiritual?"
+  },
+  {
+    id: 13,
+    text: "I exist as a kwe because of the continual refusal of countless generations to disappear from the north shore of Lake Ontario. Our presence is our weapon.",
+    source: "Leanne Betasamosake Simpson",
+    date: "As We Have Always Done, 2017",
+    context: "Kwe is a Nishnaabeg term for woman across a spectrum of gender expressions. Simpson is writing about embodied political resistance.",
+    followUp: "Three passages in this set are from the same writer. Did you notice? What does that tell you about the corpus?"
+  },
+  {
+    id: 14,
+    text: "What does it mean when the tools of a racist patriarchy are used to examine the fruits of that same patriarchy? It means that only the most narrow perimeters of change are possible and allowable.",
+    source: "Audre Lorde",
+    date: "Sister Outsider, 1984 — same essay as passage 4",
+    context: "The extended argument behind the famous aphorism. Lorde is arguing that structural critique using the academy's own tools cannot exceed the academy's limits.",
+    followUp: "Two passages are from the same writer and essay. Does having more context change how you read the first passage?"
+  }
+];
+
+let current = 0;
+let responses = {}; // id -> { who, want, believe, confidence }
+let revealedSet = new Set();
+
+function init() {
+  renderDots();
+  renderCurrent();
+}
+
+function renderDots() {
+  const nav = document.getElementById('dotNav');
+  nav.innerHTML = '';
+  TESTIMONIES.forEach((t, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === current ? ' current' : '') + (responses[t.id] ? ' answered' : '');
+    dot.onclick = () => { current = i; renderDots(); renderCurrent(); };
+    nav.appendChild(dot);
+  });
+}
+
+function updateProgress() {
+  const answered = Object.keys(responses).length;
+  const total = TESTIMONIES.length;
+  document.getElementById('progressFill').style.width = (answered / total * 100) + '%';
+  document.getElementById('progressText').textContent = `${answered} of ${total}`;
+}
+
+function renderCurrent() {
+  if (current >= TESTIMONIES.length) {
+    showSummary();
+    return;
+  }
+
+  const t = TESTIMONIES[current];
+  const saved = responses[t.id] || {};
+
+  // ── Testimony area ──
+  const area = document.getElementById('testimonyArea');
+  area.innerHTML = `
+    <div class="testimony-number">Passage ${current + 1} of ${TESTIMONIES.length}</div>
+    <div class="testimony-text">\u201C${t.text}\u201D</div>
+    <div class="testimony-nav">
+      <button class="nav-btn" onclick="navigate(-1)" ${current === 0 ? 'disabled' : ''}>← Previous</button>
+      ${current < TESTIMONIES.length - 1
+        ? `<button class="nav-btn primary" onclick="navigate(1)">Next →</button>`
+        : `<button class="nav-btn primary" onclick="showSummary()">See summary →</button>`
+      }
+      <div class="answered-badge ${saved.who ? 'show' : ''}">Answered</div>
+    </div>
+  `;
+
+  // ── Response panel ──
+  const panel = document.getElementById('responsePanel');
+  const isRevealed = revealedSet.has(t.id);
+
+  panel.innerHTML = `
+    <div class="panel-heading">Your reading — before the reveal</div>
+
+    <div class="question-block">
+      <div class="q-label">1. Who is speaking?</div>
+      <div class="q-text">What do you imagine about this person? Age, background, position, relationship to what they're describing.</div>
+      <textarea class="q-input" id="whoInput" placeholder="Write anything — even a guess." oninput="saveResponse()" rows="3">${saved.who || ''}</textarea>
+    </div>
+
+    <div class="question-block">
+      <div class="q-label">2. What do they want?</div>
+      <div class="q-text">Not what they say — what are they trying to achieve by saying it?</div>
+      <textarea class="q-input" id="wantInput" placeholder="What outcome, what effect, what change?" oninput="saveResponse()" rows="3">${saved.want || ''}</textarea>
+    </div>
+
+    <div class="question-block">
+      <div class="q-label">3. What do they believe is true about the world?</div>
+      <div class="q-text">What worldview underlies this? What do they take for granted?</div>
+      <textarea class="q-input" id="believeInput" placeholder="What assumptions are embedded here?" oninput="saveResponse()" rows="3">${saved.believe || ''}</textarea>
+    </div>
+
+    <div class="question-block">
+      <div class="q-label" style="margin-bottom:8px;">How confident are you in your reading?</div>
+      <div class="confidence-row">
+        ${['Very confident','Fairly sure','Uncertain','No idea'].map(c => `
+          <button class="conf-btn ${saved.confidence === c ? 'selected' : ''}" onclick="setConfidence('${c}')">${c}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <button class="nav-btn primary" style="width:100%" onclick="revealSource()">Reveal source</button>
+
+    <div class="reveal-block ${isRevealed ? 'show' : ''}" id="revealBlock">
+      <div class="reveal-source">${t.source}</div>
+      <div class="reveal-date">${t.date}</div>
+      <div class="reveal-context">${t.context}</div>
+      <div class="reveal-question"><em>${t.followUp}</em></div>
+    </div>
+  `;
+}
+
+function saveResponse() {
+  const t = TESTIMONIES[current];
+  const who = document.getElementById('whoInput')?.value || '';
+  const want = document.getElementById('wantInput')?.value || '';
+  const believe = document.getElementById('believeInput')?.value || '';
+  if (who || want || believe) {
+    if (!responses[t.id]) responses[t.id] = {};
+    responses[t.id].who = who;
+    responses[t.id].want = want;
+    responses[t.id].believe = believe;
+    updateProgress();
+  }
+}
+
+function setConfidence(level) {
+  const t = TESTIMONIES[current];
+  if (!responses[t.id]) responses[t.id] = {};
+  responses[t.id].confidence = level;
+  renderCurrent();
+}
+
+function revealSource() {
+  const t = TESTIMONIES[current];
+  revealedSet.add(t.id);
+  const block = document.getElementById('revealBlock');
+  if (block) {
+    block.classList.add('show');
+    block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function navigate(dir) {
+  saveResponse();
+  current = Math.max(0, Math.min(TESTIMONIES.length - 1, current + dir));
+  renderDots();
+  renderCurrent();
+}
+
+function showSummary() {
+  saveResponse();
+  document.getElementById('appBody').style.display = 'none';
+  document.getElementById('dotNav').style.display = 'none';
+
+  const summary = document.getElementById('summaryView');
+  summary.classList.add('show');
+
+  const answered = Object.keys(responses).length;
+
+  summary.innerHTML = `
+    <div class="summary-header">Your reading — complete</div>
+    <div class="summary-intro">
+      You answered ${answered} of ${TESTIMONIES.length} passages. Below are your responses alongside each source.
+      The questions at the end are for the room.
+    </div>
+
+    <div class="summary-grid">
+      ${TESTIMONIES.map(t => {
+        const r = responses[t.id] || {};
+        return `
+          <div class="summary-card">
+            <div class="summary-card-quote">\u201C${t.text.substring(0, 120)}${t.text.length > 120 ? '...' : ''}\u201D</div>
+            <div class="summary-card-source">${t.source} \u2014 ${t.date}</div>
+            <div class="summary-answers">
+              ${r.who ? `<div><strong>Who:</strong> ${r.who}</div>` : ''}
+              ${r.want ? `<div><strong>Want:</strong> ${r.want}</div>` : ''}
+              ${r.believe ? `<div><strong>Believe:</strong> ${r.believe}</div>` : ''}
+              ${r.confidence ? `<div style="margin-top:4px; color:var(--text-dim)">${r.confidence}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+
+    <div class="closing-questions">
+      <h3>For the conversation</h3>
+      <div class="closing-q">Which reveal surprised you most? What did you assume about the writer that turned out to be wrong?</div>
+      <div class="closing-q">Three passages are from Leanne Betasamosake Simpson. Two are from Audre Lorde. Two are from the same Mark Carney speech. Did having more passages from the same writer change how you read them?</div>
+      <div class="closing-q">Which passage felt most certain to you? Was your certainty justified?</div>
+      <div class="closing-q">Did any passage feel like it could have been written by anyone? What does that mean?</div>
+      <div class="closing-q">What does it mean that Columbus's passage was the most quotable description of the Arawak people?</div>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
